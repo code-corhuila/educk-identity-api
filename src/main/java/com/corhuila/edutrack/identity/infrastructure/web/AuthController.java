@@ -5,6 +5,7 @@ import com.corhuila.edutrack.identity.domain.port.in.AuthenticateUserUseCase;
 import com.corhuila.edutrack.identity.domain.port.in.GetUserProfileUseCase;
 import com.corhuila.edutrack.identity.infrastructure.web.dto.AuthResponse;
 import com.corhuila.edutrack.identity.infrastructure.web.dto.LoginRequest;
+import com.corhuila.edutrack.identity.infrastructure.security.JwtProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,17 +18,22 @@ public class AuthController {
 
     private final AuthenticateUserUseCase authenticateUserUseCase;
     private final GetUserProfileUseCase getUserProfileUseCase;
+    private final JwtProvider jwtProvider;
 
-    public AuthController(AuthenticateUserUseCase authenticateUserUseCase, GetUserProfileUseCase getUserProfileUseCase) {
+    public AuthController(
+            AuthenticateUserUseCase authenticateUserUseCase, 
+            GetUserProfileUseCase getUserProfileUseCase,
+            JwtProvider jwtProvider) {
         this.authenticateUserUseCase = authenticateUserUseCase;
         this.getUserProfileUseCase = getUserProfileUseCase;
+        this.jwtProvider = jwtProvider;
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         User user = authenticateUserUseCase.authenticate(request.getEmail(), request.getPassword());
-        String demoJwt = "jwt-mock-" + UUID.randomUUID();
-        return ResponseEntity.ok(AuthResponse.fromUser(user, demoJwt));
+        String token = jwtProvider.generateToken(user);
+        return ResponseEntity.ok(AuthResponse.fromUser(user, token));
     }
 
     @GetMapping("/users/{id}")
@@ -39,5 +45,29 @@ public class AuthController {
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("OK - Identity Service (HU-003)");
+    }
+
+    @PostMapping("/validate")
+    public ResponseEntity<?> validateToken(@RequestHeader(org.springframework.http.HttpHeaders.AUTHORIZATION) String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", "Missing or invalid Authorization header"));
+        }
+        
+        String token = authHeader.substring(7);
+        try {
+            if (jwtProvider.validateToken(token)) {
+                io.jsonwebtoken.Claims claims = jwtProvider.getClaims(token);
+                return ResponseEntity.ok(java.util.Map.of(
+                    "valid", true,
+                    "userId", claims.get("userId"),
+                    "email", claims.getSubject(),
+                    "role", "ROLE_" + claims.get("role")
+                ));
+            } else {
+                return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", "Invalid or expired token"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", e.getMessage()));
+        }
     }
 }
