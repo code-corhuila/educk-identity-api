@@ -47,6 +47,10 @@ public class JwtProvider {
         }
     }
 
+    public Claims getClaims(String token) {
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+    }
+
     public Authentication getAuthentication(String token) {
         Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
         String username = claims.getSubject();

@@ -46,4 +46,28 @@ public class AuthController {
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("OK - Identity Service (HU-003)");
     }
+
+    @PostMapping("/validate")
+    public ResponseEntity<?> validateToken(@RequestHeader(org.springframework.http.HttpHeaders.AUTHORIZATION) String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", "Missing or invalid Authorization header"));
+        }
+        
+        String token = authHeader.substring(7);
+        try {
+            if (jwtProvider.validateToken(token)) {
+                io.jsonwebtoken.Claims claims = jwtProvider.getClaims(token);
+                return ResponseEntity.ok(java.util.Map.of(
+                    "valid", true,
+                    "userId", claims.get("userId"),
+                    "email", claims.getSubject(),
+                    "role", "ROLE_" + claims.get("role")
+                ));
+            } else {
+                return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", "Invalid or expired token"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", e.getMessage()));
+        }
+    }
 }
