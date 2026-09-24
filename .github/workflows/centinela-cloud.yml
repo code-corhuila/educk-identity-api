@@ -47,3 +47,4 @@ jobs:
           else
             echo "Notice: Script not found in .github/scripts/centinela_cloud.py."
           fi
+
