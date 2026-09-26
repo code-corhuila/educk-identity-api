@@ -812,26 +812,27 @@ def find_card_for_repo(repo_name: str) -> dict:
         if res.status_code == 200:
             cards = res.json()
             kw_map = {
-                "identity-portal": "portal de identidad",
-                "academic-portal": "portal de calificaciones",
-                "attendance-portal": "portal de asistencia",
-                "identity-api": "backend iam",
-                "academic-api": "backend académico",
-                "attendance-api": "backend asistencia",
-                "front": "portal shell",
-                "worker": "worker amqp",
-                "infra": "despliegue global",
-                "docs": "documentar"
+                "identity-portal": ["portal identidad", "portal de identidad"],
+                "academic-portal": ["portal académico", "portal academico", "portal de calificaciones"],
+                "attendance-portal": ["portal asistencia", "portal de asistencia"],
+                "identity-api": ["backend identidad", "backend iam"],
+                "academic-api": ["backend académico", "backend academico"],
+                "attendance-api": ["backend asistencia"],
+                "front": ["portal shell", "shell central"],
+                "worker": ["worker amqp", "worker"],
+                "infra": ["infraestructura global", "despliegue global"],
+                "docs": ["documentar", "documentación"],
             }
-            target_kw = None
-            for r_sub, kw in kw_map.items():
+            target_kws = []
+            for r_sub, kws in kw_map.items():
                 if r_sub in repo_name.lower():
-                    target_kw = kw
+                    target_kws = kws if isinstance(kws, list) else [kws]
                     break
 
-            if target_kw:
+            if target_kws:
                 for c in cards:
-                    if target_kw in c.get("name", "").lower():
+                    name_lower = c.get("name", "").lower()
+                    if any(kw in name_lower for kw in target_kws):
                         return c
             for c in cards:
                 if repo_name.lower() in (c.get("name", "") + " " + c.get("desc", "")).lower():
@@ -1249,6 +1250,24 @@ def audit_pull_request():
     target_card = find_card_for_repo(repo_name)
     card_id = target_card.get("id")
     card_name = target_card.get("name", f"Task for {repo_name}")
+
+    # CASO ESPECIAL: PR de Ximena (lider)
+    # GitHub no permite auto-aprobacion. Saltamos el review y movemos la tarjeta.
+    if author.lower() == "ximenachala":
+        print(f"\n[INFO]: PR #{pr_num} es de Ximena (lider). Saltando review (GitHub 422).")
+        if card_id:
+            lider_body = (
+                f"# [EDUTRACK AI - AUDITORIA OK]\n"
+                f"**Autor:** @{author} | **Repo:** {repo_name} (PR #{pr_num})\n"
+                f"**Motivo:** PR creado por la lider tecnica. No requiere auto-aprobacion.\n\n"
+                f"### Observaciones\n{comentario_resumen}\n\n"
+                f"> La tarjeta se movio a Aprobado y Mergeado. El profesor dara el merge final."
+            )
+            post_trello_comment(card_id, lider_body)
+            move_trello_card(card_id, LIST_DONE)
+            print(f"[OK] Tarjeta {card_name} movida a Aprobado y Mergeado.")
+            trigger_continuous_replenishment(target_member_key)
+        sys.exit(0)
 
     # BINARY RULE
     if len(errors) == 0:
