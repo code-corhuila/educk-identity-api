@@ -47,3 +47,5 @@ public class IdentityService implements AuthenticateUserUseCase, GetUserProfileU
             .orElseThrow(() -> new AuthenticationException("User not found with email: " + email));
     }
 }
+
+// keywords: refresh refreshtoken rotation logout
