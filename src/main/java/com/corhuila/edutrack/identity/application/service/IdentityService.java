@@ -1,6 +1,6 @@
 package com.corhuila.edutrack.identity.application.service;
 
-import com.corhuila.edutrack.identity.domain.exception.InvalidCredentialsException;
+import com.corhuila.edutrack.identity.domain.exception.AuthenticationException;
 import com.corhuila.edutrack.identity.domain.model.User;
 import com.corhuila.edutrack.identity.domain.port.in.AuthenticateUserUseCase;
 import com.corhuila.edutrack.identity.domain.port.out.UserRepositoryPort;
@@ -30,10 +30,10 @@ public class IdentityService implements AuthenticateUserUseCase {
     @Override
     public User authenticate(String email, String password) {
         User user = userRepositoryPort.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> new AuthenticationException("Invalid credentials"));
 
         if (!passwordHasherPort.matches(password, user.getPasswordHash())) {
-            throw new InvalidCredentialsException("Invalid credentials");
+            throw new AuthenticationException("Invalid credentials");
         }
         return user;
     }
@@ -43,7 +43,8 @@ public class IdentityService implements AuthenticateUserUseCase {
     public String createRefreshToken(UUID userId) {
         String plainToken = UUID.randomUUID().toString();
         String hashedToken = tokenHasherPort.hash(plainToken);
-        refreshTokenRepositoryPort.save(userId, hashedToken);
+        // Expiration in 7 days
+        refreshTokenRepositoryPort.save(userId, hashedToken, java.time.LocalDateTime.now().plusDays(7));
         return plainToken;
     }
 
@@ -52,19 +53,19 @@ public class IdentityService implements AuthenticateUserUseCase {
     public User refresh(String plainToken) {
         String hashedToken = tokenHasherPort.hash(plainToken);
         if (!refreshTokenRepositoryPort.isValid(hashedToken)) {
-            throw new InvalidCredentialsException("Invalid or expired refresh token");
+            throw new AuthenticationException("Invalid or expired refresh token");
         }
         
         UUID userId = refreshTokenRepositoryPort.getUserIdByToken(hashedToken);
         if (userId == null) {
-            throw new InvalidCredentialsException("Invalid or expired refresh token");
+            throw new AuthenticationException("Invalid or expired refresh token");
         }
 
         User user = userRepositoryPort.findById(userId)
-                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+                .orElseThrow(() -> new AuthenticationException("User not found"));
 
         // Rotation: Invalidate old token immediately to prevent reuse
-        refreshTokenRepositoryPort.invalidate(hashedToken);
+        refreshTokenRepositoryPort.revoke(hashedToken);
 
         return user;
     }
@@ -74,7 +75,7 @@ public class IdentityService implements AuthenticateUserUseCase {
     public void logout(String plainToken) {
         if (plainToken != null) {
             String hashedToken = tokenHasherPort.hash(plainToken);
-            refreshTokenRepositoryPort.invalidate(hashedToken);
+            refreshTokenRepositoryPort.revoke(hashedToken);
         }
     }
 }

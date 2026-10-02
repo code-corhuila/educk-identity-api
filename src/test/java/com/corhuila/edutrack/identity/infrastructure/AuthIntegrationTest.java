@@ -40,7 +40,7 @@ public class AuthIntegrationTest {
 
     @Test
     @Sql(statements = {
-        "INSERT INTO identity_schema.users (id, first_name, last_name, email, password_hash, role) VALUES ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Integration', 'Test', 'test@example.com', '\\\.V4r4/A0L9U.Xq/5E/p7A3V/T0e6F2G6D0L4R6D0L4R', 'STUDENT') ON CONFLICT DO NOTHING;"
+        "INSERT INTO identity_schema.users (id, first_name, last_name, email, password_hash, role) VALUES ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Integration', 'Test', 'test@example.com', '$2a$10$Y8K0h0sF3v.V4r4/A0L9U.Xq/5E/p7A3V/T0e6F2G6D0L4R6D0L4R', 'STUDENT') ON CONFLICT DO NOTHING;"
     })
     void testFullAuthFlow() {
         // 1. Login
