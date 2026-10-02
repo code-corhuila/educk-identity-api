@@ -5,14 +5,16 @@ import java.util.UUID;
 
 public class AuthResponse {
     private String token;
+    private String refreshToken;
     private UUID userId;
     private String email;
     private String fullName;
     private String role;
     private UUID schoolId;
 
-    public AuthResponse(String token, UUID userId, String email, String fullName, String role, UUID schoolId) {
+    public AuthResponse(String token, String refreshToken, UUID userId, String email, String fullName, String role, UUID schoolId) {
         this.token = token;
+        this.refreshToken = refreshToken;
         this.userId = userId;
         this.email = email;
         this.fullName = fullName;
@@ -23,6 +25,19 @@ public class AuthResponse {
     public static AuthResponse fromUser(User user, String token) {
         return new AuthResponse(
             token,
+            null,
+            user.getId(),
+            user.getEmail(),
+            user.getFullName(),
+            user.getRole(),
+            user.getSchoolId()
+        );
+    }
+
+    public static AuthResponse fromUser(User user, String token, String refreshToken) {
+        return new AuthResponse(
+            token,
+            refreshToken,
             user.getId(),
             user.getEmail(),
             user.getFullName(),
@@ -32,6 +47,7 @@ public class AuthResponse {
     }
 
     public String getToken() { return token; }
+    public String getRefreshToken() { return refreshToken; }
     public UUID getUserId() { return userId; }
     public String getEmail() { return email; }
     public String getFullName() { return fullName; }

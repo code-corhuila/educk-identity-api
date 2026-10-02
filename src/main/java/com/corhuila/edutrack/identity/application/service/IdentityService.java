@@ -14,9 +14,13 @@ import java.util.UUID;
 public class IdentityService implements AuthenticateUserUseCase, GetUserProfileUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.corhuila.edutrack.identity.domain.port.out.RefreshTokenRepositoryPort refreshTokenRepositoryPort;
 
-    public IdentityService(UserRepositoryPort userRepositoryPort) {
+    public IdentityService(UserRepositoryPort userRepositoryPort, org.springframework.security.crypto.password.PasswordEncoder passwordEncoder, com.corhuila.edutrack.identity.domain.port.out.RefreshTokenRepositoryPort refreshTokenRepositoryPort) {
         this.userRepositoryPort = userRepositoryPort;
+        this.passwordEncoder = passwordEncoder;
+        this.refreshTokenRepositoryPort = refreshTokenRepositoryPort;
     }
 
     @Override
@@ -29,9 +33,38 @@ public class IdentityService implements AuthenticateUserUseCase, GetUserProfileU
             throw new AuthenticationException("User account is inactive");
         }
 
-        // Standard verification or mock demo comparison
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new AuthenticationException("Invalid credentials: password mismatch");
+        }
+
         return user;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User refresh(String refreshToken) {
+        if (!refreshTokenRepositoryPort.isValid(refreshToken)) {
+            throw new AuthenticationException("Invalid or expired refresh token");
+        }
+        UUID userId = refreshTokenRepositoryPort.getUserIdByToken(refreshToken);
+        return getUserById(userId);
+    }
+
+    @Override
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenRepositoryPort.revoke(refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public String createRefreshToken(UUID userId) {
+        String token = UUID.randomUUID().toString();
+        // store SHA-256 hash or plain string as hash, here we just use the UUID as string
+        refreshTokenRepositoryPort.save(userId, token, java.time.LocalDateTime.now().plusDays(7));
+        return token;
+    }
+
 
     @Override
     @Transactional(readOnly = true)
