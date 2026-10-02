@@ -33,7 +33,26 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         User user = authenticateUserUseCase.authenticate(request.getEmail(), request.getPassword());
         String token = jwtProvider.generateToken(user);
-        return ResponseEntity.ok(AuthResponse.fromUser(user, token));
+        String refreshToken = authenticateUserUseCase.createRefreshToken(user.getId());
+        return ResponseEntity.ok(AuthResponse.fromUser(user, token, refreshToken));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody java.util.Map<String, String> request) {
+        String reqToken = request.get("refreshToken");
+        // refresh() revokes the old token immediately
+        User user = authenticateUserUseCase.refresh(reqToken);
+        String token = jwtProvider.generateToken(user);
+        // createRefreshToken() issues a new one
+        String newRefreshToken = authenticateUserUseCase.createRefreshToken(user.getId());
+        return ResponseEntity.ok(AuthResponse.fromUser(user, token, newRefreshToken));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody java.util.Map<String, String> request) {
+        String reqToken = request.get("refreshToken");
+        authenticateUserUseCase.logout(reqToken);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/users/{id}")
