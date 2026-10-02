@@ -40,11 +40,11 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@RequestBody java.util.Map<String, String> request) {
         String reqToken = request.get("refreshToken");
+        // refresh() revokes the old token immediately
         User user = authenticateUserUseCase.refresh(reqToken);
         String token = jwtProvider.generateToken(user);
+        // createRefreshToken() issues a new one
         String newRefreshToken = authenticateUserUseCase.createRefreshToken(user.getId());
-        // Invalidate old token
-        authenticateUserUseCase.logout(reqToken);
         return ResponseEntity.ok(AuthResponse.fromUser(user, token, newRefreshToken));
     }
 
