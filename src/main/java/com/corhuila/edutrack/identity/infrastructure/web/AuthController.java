@@ -1,7 +1,7 @@
 package com.corhuila.edutrack.identity.infrastructure.web;
 
 import com.corhuila.edutrack.identity.domain.model.User;
-import com.corhuila.edutrack.identity.domain.port.in.AuthenticateUserUseCase;
+import com.corhuila.edutrack.identity.domain.port.in.LoginUseCase;
 import com.corhuila.edutrack.identity.domain.port.in.GetUserProfileUseCase;
 import com.corhuila.edutrack.identity.infrastructure.web.dto.AuthResponse;
 import com.corhuila.edutrack.identity.infrastructure.web.dto.LoginRequest;
@@ -16,24 +16,24 @@ import java.util.UUID;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    private final AuthenticateUserUseCase authenticateUserUseCase;
+    private final LoginUseCase loginUseCase;
     private final GetUserProfileUseCase getUserProfileUseCase;
     private final JwtProvider jwtProvider;
 
     public AuthController(
-            AuthenticateUserUseCase authenticateUserUseCase, 
+            LoginUseCase loginUseCase, 
             GetUserProfileUseCase getUserProfileUseCase,
             JwtProvider jwtProvider) {
-        this.authenticateUserUseCase = authenticateUserUseCase;
+        this.loginUseCase = loginUseCase;
         this.getUserProfileUseCase = getUserProfileUseCase;
         this.jwtProvider = jwtProvider;
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        User user = authenticateUserUseCase.authenticate(request.getEmail(), request.getPassword());
+        User user = loginUseCase.authenticate(request.getEmail(), request.getPassword());
         String token = jwtProvider.generateToken(user);
-        String refreshToken = authenticateUserUseCase.createRefreshToken(user.getId());
+        String refreshToken = loginUseCase.createRefreshToken(user.getId());
         return ResponseEntity.ok(AuthResponse.fromUser(user, token, refreshToken));
     }
 
@@ -41,17 +41,17 @@ public class AuthController {
     public ResponseEntity<AuthResponse> refresh(@RequestBody java.util.Map<String, String> request) {
         String reqToken = request.get("refreshToken");
         // refresh() revokes the old token immediately
-        User user = authenticateUserUseCase.refresh(reqToken);
+        User user = loginUseCase.refresh(reqToken);
         String token = jwtProvider.generateToken(user);
         // createRefreshToken() issues a new one
-        String newRefreshToken = authenticateUserUseCase.createRefreshToken(user.getId());
+        String newRefreshToken = loginUseCase.createRefreshToken(user.getId());
         return ResponseEntity.ok(AuthResponse.fromUser(user, token, newRefreshToken));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody java.util.Map<String, String> request) {
         String reqToken = request.get("refreshToken");
-        authenticateUserUseCase.logout(reqToken);
+        loginUseCase.logout(reqToken);
         return ResponseEntity.ok().build();
     }
 

@@ -2,7 +2,7 @@ package com.corhuila.edutrack.identity.application.service;
 
 import com.corhuila.edutrack.identity.domain.exception.AuthenticationException;
 import com.corhuila.edutrack.identity.domain.model.User;
-import com.corhuila.edutrack.identity.domain.port.in.AuthenticateUserUseCase;
+import com.corhuila.edutrack.identity.domain.port.in.LoginUseCase;
 import com.corhuila.edutrack.identity.domain.port.out.UserRepositoryPort;
 import com.corhuila.edutrack.identity.domain.port.out.RefreshTokenRepositoryPort;
 import com.corhuila.edutrack.identity.domain.port.out.PasswordHasherPort;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 @Service
-public class IdentityService implements AuthenticateUserUseCase {
+public class IdentityService implements LoginUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
     private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
