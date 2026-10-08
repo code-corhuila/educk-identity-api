@@ -2,18 +2,22 @@ name: Cloud Guardian 24/7 (EduTrack Quality Gates)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:        # Manual trigger in GitHub web
-
+    branches: [ develop, qa ]
+  workflow_dispatch:
 permissions:
   pull-requests: write
   contents: write
   issues: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   audit-and-sync-24-7:
     name: Quality Gates Audit, Trello & Notification Dispatch
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout Full Repository History
         uses: actions/checkout@v4
