@@ -10,7 +10,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.jdbc.Sql;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.corhuila.edutrack.identity.infrastructure.persistence.SpringDataUserRepository;
+import com.corhuila.edutrack.identity.infrastructure.persistence.UserJpaEntity;
+import org.testcontainers.utility.MountableFile;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -23,31 +30,51 @@ import java.util.Map;
 public class AuthIntegrationTest {
 
     @Container
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
         .withDatabaseName("edutrack_identity")
         .withUsername("edutrack")
-        .withPassword("secret");
+        .withPassword(UUID.randomUUID().toString())
+        .withCopyFileToContainer(schema("V1.1__create_identity_schema.sql"),
+                "/docker-entrypoint-initdb.d/01-schema.sql")
+        .withCopyFileToContainer(schema("V1.2__create_identity_tables.sql"),
+                "/docker-entrypoint-initdb.d/02-tables.sql");
+
+    private static MountableFile schema(String name) {
+        String directory = System.getProperty("identity.db.path");
+        if (directory == null) throw new IllegalStateException(
+                "Set -Didentity.db.path to the official educk-identity-db checkout");
+        return MountableFile.forHostPath(Path.of(directory, "01_ddl", name));
+    }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("jwt.secret", () -> UUID.randomUUID().toString() + UUID.randomUUID());
     }
 
     @Autowired
     private TestRestTemplate restTemplate;
+    @Autowired private SpringDataUserRepository users;
+    @Autowired private PasswordEncoder passwords;
+    private final String testPassword = UUID.randomUUID().toString();
+
+    @BeforeEach void seedUser() {
+        restTemplate.getRestTemplate().setRequestFactory(
+                new org.springframework.http.client.JdkClientHttpRequestFactory());
+        users.save(new UserJpaEntity(UUID.randomUUID(), "test@example.com",
+                passwords.encode(testPassword), "PARENT", null, "Integration Test", true,
+                LocalDateTime.now()));
+    }
 
     @Test
-    @Sql(statements = {
-        "INSERT INTO identity_schema.users (id, first_name, last_name, email, password_hash, role) VALUES ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Integration', 'Test', 'test@example.com', '$2a$10$Y8K0h0sF3v.V4r4/A0L9U.Xq/5E/p7A3V/T0e6F2G6D0L4R6D0L4R', 'STUDENT') ON CONFLICT DO NOTHING;"
-    })
     void testFullAuthFlow() {
         // 1. Login
         LoginRequest login = new LoginRequest();
         login.setEmail("test@example.com");
-        // password for above hash is "password"
-        login.setPassword("password");
+        // Credentials are generated for this disposable database.
+        login.setPassword(testPassword);
 
         ResponseEntity<AuthResponse> loginResp = restTemplate.postForEntity("/api/v1/auth/login", login, AuthResponse.class);
         assertEquals(HttpStatus.OK, loginResp.getStatusCode());

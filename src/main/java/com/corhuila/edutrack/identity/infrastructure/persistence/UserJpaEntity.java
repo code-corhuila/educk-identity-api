@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", schema = "identity_schema")
 public class UserJpaEntity {
 
     @Id
@@ -23,10 +23,11 @@ public class UserJpaEntity {
     @Column(name = "school_id")
     private UUID schoolId;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String fullName;
 
-    @Column(name = "active", nullable = false)
+    @Convert(converter = ActiveStatusConverter.class)
+    @Column(name = "status", nullable = false)
     private boolean active = true;
 
     @Column(name = "created_at", nullable = false)

@@ -3,6 +3,7 @@ package com.corhuila.edutrack.identity.application.service;
 import com.corhuila.edutrack.identity.domain.exception.AuthenticationException;
 import com.corhuila.edutrack.identity.domain.model.User;
 import com.corhuila.edutrack.identity.domain.port.in.LoginUseCase;
+import com.corhuila.edutrack.identity.domain.port.in.GetUserProfileUseCase;
 import com.corhuila.edutrack.identity.domain.port.out.UserRepositoryPort;
 import com.corhuila.edutrack.identity.domain.port.out.RefreshTokenRepositoryPort;
 import com.corhuila.edutrack.identity.domain.port.out.PasswordHasherPort;
@@ -13,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 @Service
-public class IdentityService implements LoginUseCase {
+public class IdentityService implements LoginUseCase, GetUserProfileUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
     private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
@@ -36,6 +37,18 @@ public class IdentityService implements LoginUseCase {
             throw new AuthenticationException("Invalid credentials");
         }
         return user;
+    }
+
+    @Override
+    public User getUserById(UUID id) {
+        return userRepositoryPort.findById(id)
+                .orElseThrow(() -> new AuthenticationException("User not found"));
+    }
+
+    @Override
+    public User getUserByEmail(String email) {
+        return userRepositoryPort.findByEmail(email)
+                .orElseThrow(() -> new AuthenticationException("User not found"));
     }
 
     @Override
