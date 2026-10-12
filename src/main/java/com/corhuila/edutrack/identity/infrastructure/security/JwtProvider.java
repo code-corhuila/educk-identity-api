@@ -21,9 +21,9 @@ public class JwtProvider {
     private final long expirationTime;
 
     public JwtProvider(
-            @Value("${jwt.secret:defaultSecretKeyWithAtLeast256BitsLong0123456789}") String secret,
+            @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration:86400000}") long expirationTime) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         this.expirationTime = expirationTime;
     }
 

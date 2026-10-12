@@ -1,0 +1,28 @@
+name: Identity integration tests
+on:
+  pull_request:
+    branches: [develop, qa, main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: api
+      - uses: actions/checkout@v4
+        with:
+          repository: code-corhuila/educk-identity-db
+          ref: develop
+          path: database
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: api/pom.xml
+      - name: Validate against the owning database schema
+        working-directory: api
+        run: mvn -B verify -Dapi.version=1.44 -Didentity.db.path="$GITHUB_WORKSPACE/database"
