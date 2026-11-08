@@ -34,7 +34,7 @@ public class AuthController {
         User user = loginUseCase.authenticate(request.getEmail(), request.getPassword());
         String token = jwtProvider.generateToken(user);
         String refreshToken = loginUseCase.createRefreshToken(user.getId());
-        return ResponseEntity.ok(AuthResponse.fromUser(user, token, refreshToken));
+        return ResponseEntity.ok(AuthResponse.fromUser(user, token, refreshToken, jwtProvider.getExpirationSeconds()));
     }
 
     @PostMapping("/refresh")
@@ -45,7 +45,7 @@ public class AuthController {
         String token = jwtProvider.generateToken(user);
         // createRefreshToken() issues a new one
         String newRefreshToken = loginUseCase.createRefreshToken(user.getId());
-        return ResponseEntity.ok(AuthResponse.fromUser(user, token, newRefreshToken));
+        return ResponseEntity.ok(AuthResponse.fromUser(user, token, newRefreshToken, jwtProvider.getExpirationSeconds()));
     }
 
     @PostMapping("/logout")
@@ -76,10 +76,12 @@ public class AuthController {
         try {
             if (jwtProvider.validateToken(token)) {
                 io.jsonwebtoken.Claims claims = jwtProvider.getClaims(token);
+                String email = claims.get("email", String.class);
                 return ResponseEntity.ok(java.util.Map.of(
                     "valid", true,
-                    "userId", claims.get("userId"),
-                    "email", claims.getSubject(),
+                    "sub", claims.getSubject(),
+                    "userId", claims.getSubject(),
+                    "email", email != null ? email : "",
                     "role", "ROLE_" + claims.get("role")
                 ));
             } else {

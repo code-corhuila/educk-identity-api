@@ -23,3 +23,13 @@ branch into another: `merge develop -> qa` and `merge qa -> main` do not exist i
 rule.
 
 Full policy: `00-governance/branching-policy.md` in `library-docs`.
+
+## Token signing (RS256)
+
+Access tokens are asymmetric JWTs signed with `RS256` (max lifetime `3600` seconds, default `900`).
+Set `JWT_PRIVATE_KEY` (PKCS#8 PEM) and `JWT_PUBLIC_KEY` (X.509 PEM) in the environment. Generate a local development key pair without committing keys:
+
+```sh
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private.pem
+openssl rsa -pubout -in private.pem -out public.pem
+```
