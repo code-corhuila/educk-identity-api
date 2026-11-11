@@ -33,7 +33,7 @@ public class IdentityService implements LoginUseCase, GetUserProfileUseCase {
         User user = userRepositoryPort.findByEmail(email)
                 .orElseThrow(() -> new AuthenticationException("Invalid credentials"));
 
-        if (!passwordHasherPort.matches(password, user.getPasswordHash())) {
+        if (!user.isActive() || !passwordHasherPort.matches(password, user.getPasswordHash())) {
             throw new AuthenticationException("Invalid credentials");
         }
         return user;
@@ -76,6 +76,10 @@ public class IdentityService implements LoginUseCase, GetUserProfileUseCase {
 
         User user = userRepositoryPort.findById(userId)
                 .orElseThrow(() -> new AuthenticationException("User not found"));
+        if (!user.isActive()) {
+            refreshTokenRepositoryPort.revoke(hashedToken);
+            throw new AuthenticationException("User account is inactive");
+        }
 
         // Rotation: Invalidate old token immediately to prevent reuse
         refreshTokenRepositoryPort.revoke(hashedToken);

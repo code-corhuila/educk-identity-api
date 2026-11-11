@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Component
+@SuppressWarnings("null")
 public class JpaUserRepositoryAdapter implements UserRepositoryPort {
 
     private final SpringDataUserRepository repository;

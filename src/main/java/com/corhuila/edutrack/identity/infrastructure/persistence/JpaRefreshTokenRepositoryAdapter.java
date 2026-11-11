@@ -3,10 +3,10 @@ package com.corhuila.edutrack.identity.infrastructure.persistence;
 import com.corhuila.edutrack.identity.domain.port.out.RefreshTokenRepositoryPort;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Component
+@SuppressWarnings("null")
 public class JpaRefreshTokenRepositoryAdapter implements RefreshTokenRepositoryPort {
     private final SpringDataRefreshTokenRepository repository;
 
