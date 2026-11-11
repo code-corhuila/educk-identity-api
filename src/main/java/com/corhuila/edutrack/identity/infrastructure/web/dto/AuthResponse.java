@@ -5,6 +5,8 @@ import java.util.UUID;
 
 public class AuthResponse {
     private String token;
+    private String tokenType;
+    private Long expiresIn;
     private String refreshToken;
     private UUID userId;
     private String email;
@@ -13,7 +15,13 @@ public class AuthResponse {
     private UUID schoolId;
 
     public AuthResponse(String token, String refreshToken, UUID userId, String email, String fullName, String role, UUID schoolId) {
+        this(token, "Bearer", 900L, refreshToken, userId, email, fullName, role, schoolId);
+    }
+
+    public AuthResponse(String token, String tokenType, Long expiresIn, String refreshToken, UUID userId, String email, String fullName, String role, UUID schoolId) {
         this.token = token;
+        this.tokenType = tokenType;
+        this.expiresIn = expiresIn;
         this.refreshToken = refreshToken;
         this.userId = userId;
         this.email = email;
@@ -26,6 +34,8 @@ public class AuthResponse {
         return new AuthResponse(
             token,
             null,
+            null,
+            null,
             user.getId(),
             user.getEmail(),
             user.getFullName(),
@@ -35,8 +45,14 @@ public class AuthResponse {
     }
 
     public static AuthResponse fromUser(User user, String token, String refreshToken) {
+        return fromUser(user, token, refreshToken, 900L);
+    }
+
+    public static AuthResponse fromUser(User user, String token, String refreshToken, long expiresIn) {
         return new AuthResponse(
             token,
+            "Bearer",
+            expiresIn,
             refreshToken,
             user.getId(),
             user.getEmail(),
@@ -47,6 +63,8 @@ public class AuthResponse {
     }
 
     public String getToken() { return token; }
+    public String getTokenType() { return tokenType; }
+    public Long getExpiresIn() { return expiresIn; }
     public String getRefreshToken() { return refreshToken; }
     public UUID getUserId() { return userId; }
     public String getEmail() { return email; }

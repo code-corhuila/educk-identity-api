@@ -9,7 +9,9 @@ services:
       DB_NAME: ${PG_DATABASE:?Set PG_DATABASE}
       DB_USER: identity_app
       DB_PASSWORD: ${IDENTITY_APP_PASSWORD:?Set IDENTITY_APP_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?Set JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?Set JWT_PUBLIC_KEY}
+      JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-900}
     depends_on:
       identity-db-migrate:
         condition: service_completed_successfully
