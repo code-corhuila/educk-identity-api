@@ -21,7 +21,7 @@ public class AuthController {
     private final JwtProvider jwtProvider;
 
     public AuthController(
-            LoginUseCase loginUseCase, 
+            LoginUseCase loginUseCase,
             GetUserProfileUseCase getUserProfileUseCase,
             JwtProvider jwtProvider) {
         this.loginUseCase = loginUseCase;
@@ -45,7 +45,8 @@ public class AuthController {
         String token = jwtProvider.generateToken(user);
         // createRefreshToken() issues a new one
         String newRefreshToken = loginUseCase.createRefreshToken(user.getId());
-        return ResponseEntity.ok(AuthResponse.fromUser(user, token, newRefreshToken, jwtProvider.getExpirationSeconds()));
+        return ResponseEntity
+                .ok(AuthResponse.fromUser(user, token, newRefreshToken, jwtProvider.getExpirationSeconds()));
     }
 
     @PostMapping("/logout")
@@ -75,25 +76,27 @@ public class AuthController {
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<?> validateToken(@RequestHeader(org.springframework.http.HttpHeaders.AUTHORIZATION) String authHeader) {
+    public ResponseEntity<?> validateToken(
+            @RequestHeader(org.springframework.http.HttpHeaders.AUTHORIZATION) String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", "Missing or invalid Authorization header"));
+            return ResponseEntity.status(401)
+                    .body(java.util.Map.of("valid", false, "error", "Missing or invalid Authorization header"));
         }
-        
+
         String token = authHeader.substring(7);
         try {
             if (jwtProvider.validateToken(token)) {
                 io.jsonwebtoken.Claims claims = jwtProvider.getClaims(token);
                 String email = claims.get("email", String.class);
                 return ResponseEntity.ok(java.util.Map.of(
-                    "valid", true,
-                    "sub", claims.getSubject(),
-                    "userId", claims.getSubject(),
-                    "email", email != null ? email : "",
-                    "role", "ROLE_" + claims.get("role")
-                ));
+                        "valid", true,
+                        "sub", claims.getSubject(),
+                        "userId", claims.getSubject(),
+                        "email", email != null ? email : "",
+                        "role", "ROLE_" + claims.get("role")));
             } else {
-                return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", "Invalid or expired token"));
+                return ResponseEntity.status(401)
+                        .body(java.util.Map.of("valid", false, "error", "Invalid or expired token"));
             }
         } catch (Exception e) {
             return ResponseEntity.status(401).body(java.util.Map.of("valid", false, "error", e.getMessage()));

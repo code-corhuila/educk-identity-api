@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
+@SuppressWarnings("null")
 public class AuthIntegrationTest {
 
     private static final KeyPair RUNTIME_KEY_PAIR = generateRsaKeyPair();
