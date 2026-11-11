@@ -57,6 +57,14 @@ public class AuthController {
 
     @GetMapping("/users/{id}")
     public ResponseEntity<AuthResponse> getUserProfile(@PathVariable UUID id) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getName() != null && !"anonymousUser".equals(auth.getName())) {
+            boolean isPrivileged = auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ROLE_DIRECTIVO".equals(a.getAuthority()));
+            if (!isPrivileged && !id.toString().equals(auth.getName())) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+            }
+        }
         User user = getUserProfileUseCase.getUserById(id);
         return ResponseEntity.ok(AuthResponse.fromUser(user, null));
     }
