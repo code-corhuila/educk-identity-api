@@ -1,6 +1,8 @@
 package com.corhuila.edutrack.identity.infrastructure.web.dto;
 
 import com.corhuila.edutrack.identity.domain.model.User;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 public class AuthResponse {
@@ -18,7 +20,17 @@ public class AuthResponse {
         this(token, "Bearer", 900L, refreshToken, userId, email, fullName, role, schoolId);
     }
 
-    public AuthResponse(String token, String tokenType, Long expiresIn, String refreshToken, UUID userId, String email, String fullName, String role, UUID schoolId) {
+    @JsonCreator
+    public AuthResponse(
+            @JsonProperty("token") String token,
+            @JsonProperty("tokenType") String tokenType,
+            @JsonProperty("expiresIn") Long expiresIn,
+            @JsonProperty("refreshToken") String refreshToken,
+            @JsonProperty("userId") UUID userId,
+            @JsonProperty("email") String email,
+            @JsonProperty("fullName") String fullName,
+            @JsonProperty("role") String role,
+            @JsonProperty("schoolId") UUID schoolId) {
         this.token = token;
         this.tokenType = tokenType;
         this.expiresIn = expiresIn;
